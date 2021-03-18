@@ -1,0 +1,5 @@
+documentation:
+  dir: ""
+resources:
+  clients: 
+    example-client: "example.url"
