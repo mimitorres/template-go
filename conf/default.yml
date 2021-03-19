@@ -1,5 +1,7 @@
 documentation:
   dir: ""
-resources:
+template-go:
   clients: 
     example-client: "example.url"
+    mocky: 
+      uri: "https://run.mocky.io/v3"

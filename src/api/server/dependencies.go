@@ -1,7 +1,10 @@
 package server
 
 import (
+	"net/http"
 	"template-go/src/api/pkg"
+	"template-go/src/api/util/restcli"
+	"time"
 )
 
 type ControllersContainer struct {
@@ -22,8 +25,19 @@ func newPackageService() *pkg.PackageService {
 }
 
 func newPackageRepository() *pkg.PackageRepository {
-	baseURL, _ := conf.String("resources.clients.example-client")
+	//REVIEW: baseURL, _ := conf.String("template-go.resources.clients.mocky.uri")
+	baseURL := "https://run.mocky.io/v3"
+	packageClient := newRestClient().Build()
 	return &pkg.PackageRepository{
 		BaseURL: baseURL,
+		Client:  packageClient,
+	}
+}
+
+func newRestClient() restcli.ClientBuilder {
+	return restcli.ClientBuilder{
+		Headers:        http.Header{"X-Caller-Scopes": {"admin,write"}},
+		Timeout:        2 * time.Second,
+		DisableTimeout: false,
 	}
 }

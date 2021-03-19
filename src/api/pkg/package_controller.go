@@ -1,47 +1,44 @@
 package pkg
 
 import (
-	"fmt"
+	"context"
+	goerror "errors"
 	"net/http"
+	"template-go/src/api/pkg/model"
+	"template-go/src/api/util"
 
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 )
 
 type packageService interface {
+	GetPackageByID(context.Context, string) (model.Package, error)
 }
 
 type PackageController struct {
 	Service packageService
 }
 
-type PackageResponse struct {
-	Message string `json:"message",omitempty`
-}
-
 func (pc PackageController) GetPackageById(c *gin.Context) {
 	id := c.Param("id")
-	message := PackageResponse{
-		Message: fmt.Sprintf("The id is %s", id),
+
+	if id == "" {
+		util.AbortWithStatusCode(c, http.StatusBadRequest, "package id cannot be empty", nil)
+		return
 	}
-	c.JSON(http.StatusOK, message)
-}
 
-type CauseList []interface{}
+	res, err := pc.Service.GetPackageByID(c, id)
 
-type apiError struct {
-	Status  int       `json:"status"`
-	Message string    `json:"message",omitempty`
-	Cause   CauseList `json:"cause"`
-}
-
-func abortWithStatusCode(c *gin.Context, status int, msg string, err error) {
-	var cause CauseList
 	if err != nil {
-		cause = CauseList{err.Error()}
+		if goerror.Is(errors.Cause(err), model.ErrBadRequest) {
+			util.AbortWithStatusCode(c, http.StatusBadRequest, "invalid parameters", err)
+			return
+		} else if goerror.Is(errors.Cause(err), model.ErrNotFound) {
+			util.AbortWithStatusCode(c, http.StatusNotFound, "package not found", err)
+			return
+		}
+		util.AbortWithStatusCode(c, http.StatusInternalServerError, "unknown error", err)
+		return
 	}
-	c.AbortWithStatusJSON(status, apiError{
-		Status:  status,
-		Message: msg,
-		Cause:   cause,
-	})
+	c.JSON(http.StatusOK, &res)
 }
